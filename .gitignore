@@ -19,6 +19,6 @@ ENV/
 .coverage.*
 htmlcov/
 
-todo.db
-todo.db-shm
-todo.db-wal
+*.db
+*.db-shm
+*.db-wal
