@@ -138,7 +138,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .page-title {
@@ -151,6 +151,35 @@
   color: var(--text-soft);
   padding: 0;
   cursor: pointer;
+}
+
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+}
+
+.stat-card span {
+  display: block;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+}
+
+.stat-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.6rem;
+  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+  font-weight: 600;
 }
 
 .todo-surface {
@@ -201,6 +230,32 @@
   text-decoration: line-through;
 }
 
+.task-content-button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  min-width: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.task-content-button:disabled,
+.tag-button:disabled,
+.icon-button:disabled,
+.quiet-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.task-content-button:focus-visible,
+.tag-button:focus-visible,
+.icon-button:focus-visible,
+.quiet-button:focus-visible,
+.fab-button:focus-visible {
+  outline: 2px solid rgba(31, 111, 88, 0.22);
+  outline-offset: 2px;
+}
+
 .task-check {
   display: inline-flex;
   align-items: center;
@@ -230,13 +285,6 @@
 
 .task-content {
   min-width: 0;
-}
-
-.task-topline {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  justify-content: space-between;
 }
 
 .task-title {
@@ -333,18 +381,23 @@
 }
 
 @media (max-width: 640px) {
+  .stats-bar {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .task-row {
     grid-template-columns: auto 1fr auto;
     align-items: start;
   }
 
-  .task-content {
+  .task-content-button {
     grid-column: 2 / 4;
   }
 
-  .task-topline {
-    align-items: flex-start;
-    flex-direction: column;
+  .tag-button {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: 8px;
   }
 
   .icon-button {

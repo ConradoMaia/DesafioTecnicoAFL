@@ -17,7 +17,7 @@ class UserResponse(BaseModel):
 
 class TaskBase(BaseModel):
     title: str
-    description: str
+    description: str = ""
     status: str = "pendente"
     is_urgent: bool = False
 

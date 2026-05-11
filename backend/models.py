@@ -19,7 +19,7 @@ class Task(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
-    description: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(String, default="", nullable=False)
     status: Mapped[str] = mapped_column(String, default="pendente", nullable=False)
     is_urgent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(

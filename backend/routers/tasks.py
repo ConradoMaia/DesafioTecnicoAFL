@@ -28,7 +28,7 @@ def create_task(
 ) -> Task:
     task = Task(
         title=task_data.title,
-        description=task_data.description,
+        description=task_data.description or "",
         status=task_data.status,
         is_urgent=task_data.is_urgent,
         user_id=current_user.id,
@@ -73,6 +73,9 @@ def update_task(
         )
 
     update_data = task_data.model_dump(exclude_unset=True)
+    if "description" in update_data:
+        update_data["description"] = update_data["description"] or ""
+
     for field, value in update_data.items():
         setattr(task, field, value)
 

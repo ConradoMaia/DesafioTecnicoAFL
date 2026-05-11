@@ -22,11 +22,12 @@ function Dashboard() {
   const navigate = useNavigate()
   const { logout } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
-  const [isCreating, setIsCreating] = useState(false)
+  const [isSavingTask, setIsSavingTask] = useState(false)
   const [busyTaskId, setBusyTaskId] = useState(null)
   const [isComposerOpen, setIsComposerOpen] = useState(false)
+  const [editingTaskId, setEditingTaskId] = useState(null)
   const [tasks, setTasks] = useState([])
-  const [newTask, setNewTask] = useState({
+  const [taskForm, setTaskForm] = useState({
     title: '',
     description: '',
     is_urgent: false,
@@ -61,25 +62,67 @@ function Dashboard() {
 
   const handleChange = (event) => {
     const { checked, name, type, value } = event.target
-    setNewTask((currentTask) => ({
+    setTaskForm((currentTask) => ({
       ...currentTask,
       [name]: type === 'checkbox' ? checked : value,
     }))
   }
 
-  const handleCreateTask = async (event) => {
+  const resetTaskForm = () => {
+    setTaskForm({
+      title: '',
+      description: '',
+      is_urgent: false,
+    })
+    setEditingTaskId(null)
+  }
+
+  const closeComposer = () => {
+    setIsComposerOpen(false)
+    resetTaskForm()
+  }
+
+  const openCreateComposer = () => {
+    resetTaskForm()
+    setIsComposerOpen(true)
+  }
+
+  const openEditComposer = (task) => {
+    setEditingTaskId(task.id)
+    setTaskForm({
+      title: task.title,
+      description: task.description,
+      is_urgent: task.is_urgent,
+    })
+    setIsComposerOpen(true)
+  }
+
+  const handleSaveTask = async (event) => {
     event.preventDefault()
 
     try {
-      setIsCreating(true)
-      const { data } = await axiosClient.post('/tasks/', newTask)
-      setTasks((currentTasks) => sortTasks([data, ...currentTasks]))
-      setNewTask({
-        title: '',
-        description: '',
-        is_urgent: false,
-      })
-      setIsComposerOpen(false)
+      setIsSavingTask(true)
+      const payload = {
+        title: taskForm.title,
+        description: taskForm.description,
+        is_urgent: taskForm.is_urgent,
+      }
+
+      if (editingTaskId === null) {
+        const { data } = await axiosClient.post('/tasks/', payload)
+        setTasks((currentTasks) => sortTasks([data, ...currentTasks]))
+      } else {
+        const { data } = await axiosClient.put(`/tasks/${editingTaskId}`, payload)
+        setTasks((currentTasks) =>
+          sortTasks(
+            currentTasks.map((currentTask) =>
+              currentTask.id === editingTaskId ? data : currentTask,
+            ),
+          ),
+        )
+      }
+
+      closeComposer()
     } catch (error) {
       if (error.response?.status === 401) {
         logout()
@@ -92,10 +135,10 @@ function Dashboard() {
       window.alert(
         typeof message === 'string'
           ? message
-          : 'Nao foi possivel criar a tarefa.',
+          : 'Nao foi possivel salvar a tarefa.',
       )
     } finally {
-      setIsCreating(false)
+      setIsSavingTask(false)
     }
   }
 
@@ -198,8 +241,69 @@ function Dashboard() {
     navigate('/login', { replace: true })
   }
 
+  const openTasksCount = tasks.filter((task) => task.status === 'pendente').length
+  const closedTasksCount = tasks.filter(
+    (task) => task.status === 'concluida',
+  ).length
   const urgentTasks = tasks.filter((task) => task.is_urgent)
   const regularTasks = tasks.filter((task) => !task.is_urgent)
+
+  const renderTaskGroup = (title, groupTasks) => (
+    <section className="task-group">
+      <h2 className="group-title">{title}</h2>
+      <ul className="task-list">
+        {groupTasks.map((task) => (
+          <li
+            key={task.id}
+            className={`task-row ${task.status === 'concluida' ? 'is-complete' : ''}`}
+          >
+            <label className="task-check" htmlFor={`task-${task.id}`}>
+              <input
+                id={`task-${task.id}`}
+                type="checkbox"
+                checked={task.status === 'concluida'}
+                onChange={() => handleToggleStatus(task)}
+                disabled={busyTaskId === task.id}
+              />
+              <span />
+            </label>
+            <button
+              className="task-content-button"
+              type="button"
+              onClick={() => openEditComposer(task)}
+              disabled={busyTaskId === task.id}
+            >
+              <div className="task-content">
+                <h3 className="task-title">{task.title}</h3>
+                {task.description ? (
+                  <p className="task-description">{task.description}</p>
+                ) : null}
+              </div>
+            </button>
+            <button
+              className={`tag-button ${task.is_urgent ? 'tag-button-active' : ''}`}
+              type="button"
+              onClick={() => handleToggleUrgent(task)}
+              disabled={busyTaskId === task.id}
+            >
+              {task.is_urgent ? 'Urgente' : 'Priorizar'}
+            </button>
+            <button
+              className="icon-button"
+              type="button"
+              onClick={() => handleDeleteTask(task.id)}
+              disabled={busyTaskId === task.id}
+              aria-label="Excluir tarefa"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h2v9H7V9Zm4 0h2v9h-2V9Zm4 0h2v9h-2V9ZM6 21a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6Z" />
+              </svg>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
 
   return (
     <div className="dashboard-shell">
@@ -209,6 +313,17 @@ function Dashboard() {
           Sair
         </button>
       </header>
+
+      <section className="stats-bar">
+        <article className="stat-card">
+          <span>Abertas</span>
+          <strong>{openTasksCount}</strong>
+        </article>
+        <article className="stat-card">
+          <span>Fechadas</span>
+          <strong>{closedTasksCount}</strong>
+        </article>
+      </section>
 
       <section className="todo-surface">
         {isLoading ? (
@@ -221,109 +336,8 @@ function Dashboard() {
           </div>
         ) : (
           <>
-            {urgentTasks.length > 0 && (
-              <section className="task-group">
-                <h2 className="group-title">Urgentes</h2>
-                <ul className="task-list">
-                  {urgentTasks.map((task) => (
-                    <li
-                      key={task.id}
-                      className={`task-row ${
-                        task.status === 'concluida' ? 'is-complete' : ''
-                      }`}
-                    >
-                      <label className="task-check" htmlFor={`task-${task.id}`}>
-                        <input
-                          id={`task-${task.id}`}
-                          type="checkbox"
-                          checked={task.status === 'concluida'}
-                          onChange={() => handleToggleStatus(task)}
-                          disabled={busyTaskId === task.id}
-                        />
-                        <span />
-                      </label>
-                      <div className="task-content">
-                        <div className="task-topline">
-                          <h3 className="task-title">{task.title}</h3>
-                          <button
-                            className="tag-button tag-button-active"
-                            type="button"
-                            onClick={() => handleToggleUrgent(task)}
-                            disabled={busyTaskId === task.id}
-                          >
-                            Urgente
-                          </button>
-                        </div>
-                        <p className="task-description">{task.description}</p>
-                      </div>
-                      <button
-                        className="icon-button"
-                        type="button"
-                        onClick={() => handleDeleteTask(task.id)}
-                        disabled={busyTaskId === task.id}
-                        aria-label="Excluir tarefa"
-                      >
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h2v9H7V9Zm4 0h2v9h-2V9Zm4 0h2v9h-2V9ZM6 21a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6Z" />
-                        </svg>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {regularTasks.length > 0 && (
-              <section className="task-group">
-                <h2 className="group-title">Tarefas</h2>
-                <ul className="task-list">
-                  {regularTasks.map((task) => (
-                    <li
-                      key={task.id}
-                      className={`task-row ${
-                        task.status === 'concluida' ? 'is-complete' : ''
-                      }`}
-                    >
-                      <label className="task-check" htmlFor={`task-${task.id}`}>
-                        <input
-                          id={`task-${task.id}`}
-                          type="checkbox"
-                          checked={task.status === 'concluida'}
-                          onChange={() => handleToggleStatus(task)}
-                          disabled={busyTaskId === task.id}
-                        />
-                        <span />
-                      </label>
-                      <div className="task-content">
-                        <div className="task-topline">
-                          <h3 className="task-title">{task.title}</h3>
-                          <button
-                            className="tag-button"
-                            type="button"
-                            onClick={() => handleToggleUrgent(task)}
-                            disabled={busyTaskId === task.id}
-                          >
-                            Marcar urgente
-                          </button>
-                        </div>
-                        <p className="task-description">{task.description}</p>
-                      </div>
-                      <button
-                        className="icon-button"
-                        type="button"
-                        onClick={() => handleDeleteTask(task.id)}
-                        disabled={busyTaskId === task.id}
-                        aria-label="Excluir tarefa"
-                      >
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h2v9H7V9Zm4 0h2v9h-2V9Zm4 0h2v9h-2V9ZM6 21a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6Z" />
-                        </svg>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
+            {urgentTasks.length > 0 ? renderTaskGroup('Urgentes', urgentTasks) : null}
+            {regularTasks.length > 0 ? renderTaskGroup('Tarefas', regularTasks) : null}
           </>
         )}
       </section>
@@ -331,7 +345,7 @@ function Dashboard() {
       <button
         className="fab-button"
         type="button"
-        onClick={() => setIsComposerOpen(true)}
+        onClick={openCreateComposer}
         aria-label="Adicionar tarefa"
       >
         +
@@ -341,36 +355,36 @@ function Dashboard() {
         <div
           className="modal-backdrop"
           role="presentation"
-          onClick={() => setIsComposerOpen(false)}
+          onClick={closeComposer}
         >
           <div
             className="modal-card"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="new-task-title"
+            aria-labelledby="task-modal-title"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="modal-header">
-              <h2 id="new-task-title" className="group-title">
-                Nova tarefa
+              <h2 id="task-modal-title" className="group-title">
+                {editingTaskId === null ? 'Nova tarefa' : 'Editar tarefa'}
               </h2>
               <button
                 className="quiet-button"
                 type="button"
-                onClick={() => setIsComposerOpen(false)}
+                onClick={closeComposer}
               >
                 Fechar
               </button>
             </div>
 
-            <form className="auth-form" onSubmit={handleCreateTask}>
+            <form className="auth-form" onSubmit={handleSaveTask}>
               <div className="field">
                 <label htmlFor="title">Titulo</label>
                 <input
                   id="title"
                   name="title"
                   type="text"
-                  value={newTask.title}
+                  value={taskForm.title}
                   onChange={handleChange}
                   required
                 />
@@ -380,9 +394,8 @@ function Dashboard() {
                 <textarea
                   id="description"
                   name="description"
-                  value={newTask.description}
+                  value={taskForm.description}
                   onChange={handleChange}
-                  required
                 />
               </div>
               <label className="inline-check" htmlFor="is_urgent">
@@ -390,7 +403,7 @@ function Dashboard() {
                   id="is_urgent"
                   name="is_urgent"
                   type="checkbox"
-                  checked={newTask.is_urgent}
+                  checked={taskForm.is_urgent}
                   onChange={handleChange}
                 />
                 <span>Marcar como urgente</span>
@@ -398,9 +411,13 @@ function Dashboard() {
               <button
                 className="button button-primary"
                 type="submit"
-                disabled={isCreating}
+                disabled={isSavingTask}
               >
-                {isCreating ? 'Salvando...' : 'Salvar tarefa'}
+                {isSavingTask
+                  ? 'Salvando...'
+                  : editingTaskId === null
+                    ? 'Salvar tarefa'
+                    : 'Atualizar tarefa'}
               </button>
             </form>
           </div>
