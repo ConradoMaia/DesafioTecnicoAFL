@@ -1,10 +1,11 @@
+import os
 from collections.abc import Generator
 from typing import Any
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 
-DATABASE_URL = "sqlite:///./teste.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./teste.db")
 
 
 class Base(DeclarativeBase):

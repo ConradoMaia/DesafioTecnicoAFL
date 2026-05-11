@@ -1,5 +1,6 @@
 from __future__ import annotations
 import hashlib
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any
 import jwt
@@ -13,8 +14,9 @@ from .database import get_db
 from .models import User
 
 
-SECRET_KEY = "env"
+SECRET_KEY = os.getenv("SECRET_KEY", "secret-key-change-me")
 ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 PASSWORD_HASH_PREFIX = "sha256$"
 
@@ -47,7 +49,9 @@ def create_access_token(
 ) -> str:
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (
-        expires_delta if expires_delta is not None else timedelta(minutes=30)
+        expires_delta
+        if expires_delta is not None
+        else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
