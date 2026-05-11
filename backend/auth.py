@@ -1,4 +1,5 @@
 from __future__ import annotations
+import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any
 import jwt
@@ -15,16 +16,29 @@ from .models import User
 SECRET_KEY = "env"
 ALGORITHM = "HS256"
 
+PASSWORD_HASH_PREFIX = "sha256$"
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
 
+def _prepare_password(password: str) -> str:
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        if hashed_password.startswith(PASSWORD_HASH_PREFIX):
+            stored_hash = hashed_password.removeprefix(PASSWORD_HASH_PREFIX)
+            return pwd_context.verify(_prepare_password(plain_password), stored_hash)
+
+        return pwd_context.verify(plain_password, hashed_password)
+    except ValueError:
+        return False
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return PASSWORD_HASH_PREFIX + pwd_context.hash(_prepare_password(password))
 
 
 def create_access_token(
