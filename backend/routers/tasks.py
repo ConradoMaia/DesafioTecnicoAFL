@@ -30,6 +30,7 @@ def create_task(
         title=task_data.title,
         description=task_data.description,
         status=task_data.status,
+        is_urgent=task_data.is_urgent,
         user_id=current_user.id,
     )
     db.add(task)

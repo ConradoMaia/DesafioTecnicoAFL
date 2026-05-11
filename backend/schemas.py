@@ -19,6 +19,7 @@ class TaskBase(BaseModel):
     title: str
     description: str
     status: str = "pendente"
+    is_urgent: bool = False
 
 
 class TaskCreate(TaskBase):
@@ -29,6 +30,7 @@ class TaskUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     status: str | None = None
+    is_urgent: bool | None = None
 
 
 class TaskResponse(BaseModel):
@@ -36,6 +38,7 @@ class TaskResponse(BaseModel):
     title: str
     description: str
     status: str
+    is_urgent: bool
     created_at: datetime
     user_id: int
 

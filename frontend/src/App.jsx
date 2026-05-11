@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
+import './App.css'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Login from './pages/Login.jsx'
@@ -28,6 +29,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from datetime import datetime
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .database import Base
 
@@ -21,6 +21,7 @@ class Task(Base):
     title: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(String, default="pendente", nullable=False)
+    is_urgent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow,
